@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business Booking Dashboard</title>
-  <!-- Load Supabase from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Load Supabase CDN Library -->
+  <script src="https://jsdelivr.net"></script>
   <style>
     body {
       margin: 0;
       padding: 40px 20px;
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      background-color: #1a0f0a;
+      background-color: #1a0f0a; /* Match Luxury Palette */
       color: #f5f0eb;
     }
     .dashboard-container {
@@ -77,21 +77,20 @@
       </thead>
       <tbody id="appointmentRows">
         <tr>
-          <td colspan="4" style="text-align: center; color: #9c8a7f;">Loading schedule details...</td>
+          <td colspan="4" style="text-align: center; color: #9c8a7f;">Connecting to database...</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // FIX: Grab the client generation function correctly from the window object
+    // Configured parameters matching your project
     const SUPABASE_URL = 'https://ibnbsffnqyrpqjhpbtjc.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_194EeT0E7f1lJhtaU_2fXg_fkNFts3I';
     
-    // This exact syntax is required for CDN scripts
+    // Explicitly reference the global window scope to avoid crashes
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Load appointments from database
     async function loadAppointments() {
       const tableBody = document.getElementById('appointmentRows');
       
@@ -102,7 +101,7 @@
           .order('booking_date', { ascending: true });
 
         if (error) {
-          tableBody.innerHTML = `<tr><td colspan="4" style="color: #8b2626;">Error: ${error.message}</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="4" style="color: #ff6b6b; text-align: center;">Database Error: ${error.message}</td></tr>`;
           return;
         }
 
@@ -111,12 +110,12 @@
           return;
         }
 
-        tableBody.innerHTML = ''; // Clear loaders
+        tableBody.innerHTML = ''; // Wipe loading message
 
         data.forEach(appointment => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td>${appointment.name}</td>
+            <td>${appointment.name || 'Anonymous'}</td>
             <td>${appointment.booking_date}</td>
             <td>${appointment.booking_time}</td>
             <td>
@@ -127,11 +126,10 @@
         });
         
       } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="4" style="color: #8b2626;">Script Error: ${err.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" style="color: #ff6b6b; text-align: center;">Connection Crash: ${err.message}</td></tr>`;
       }
     }
 
-    // Cancellation Logic
     async function cancelAppointment(id) {
       if (confirm('Are you sure you want to cancel this booking?')) {
         const { error } = await supabaseClient
@@ -143,12 +141,12 @@
           alert('Could not cancel: ' + error.message);
         } else {
           alert('Appointment cancelled successfully.');
-          loadAppointments(); // Refresh list
+          loadAppointments(); 
         }
       }
     }
 
-    // Run immediately on page open
+    // Fire off the initialization check
     loadAppointments();
   </script>
 </body>
