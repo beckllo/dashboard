@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Business Booking Dashboard</title>
-  <script src="https://jsdelivr.net"></script>
+  <!-- Load Supabase from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       margin: 0;
@@ -75,50 +76,65 @@
         </tr>
       </thead>
       <tbody id="appointmentRows">
-        <!-- Data will load here automatically -->
+        <tr>
+          <td colspan="4" style="text-align: center; color: #9c8a7f;">Loading schedule details...</td>
+        </tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // Initialize Supabase
-    const SUPABASE_URL = 'https://supabase.co';
+    // FIX: Grab the client generation function correctly from the window object
+    const SUPABASE_URL = 'https://ibnbsffnqyrpqjhpbtjc.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_194EeT0E7f1lJhtaU_2fXg_fkNFts3I';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // This exact syntax is required for CDN scripts
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Load appointments from database
     async function loadAppointments() {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .order('booking_date', { ascending: true });
-
-      if (error) {
-        alert('Error fetching data: ' + error.message);
-        return;
-      }
-
       const tableBody = document.getElementById('appointmentRows');
-      tableBody.innerHTML = ''; // Clear older rows
+      
+      try {
+        const { data, error } = await supabaseClient
+          .from('appointments')
+          .select('*')
+          .order('booking_date', { ascending: true });
 
-      data.forEach(appointment => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${appointment.name}</td>
-          <td>${appointment.booking_date}</td>
-          <td>${appointment.booking_time}</td>
-          <td>
-            <button class="cancel-btn" onclick="cancelAppointment('${appointment.id}')">Cancel</button>
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
+        if (error) {
+          tableBody.innerHTML = `<tr><td colspan="4" style="color: #8b2626;">Error: ${error.message}</td></tr>`;
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #9c8a7f;">No active bookings found.</td></tr>`;
+          return;
+        }
+
+        tableBody.innerHTML = ''; // Clear loaders
+
+        data.forEach(appointment => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${appointment.name}</td>
+            <td>${appointment.booking_date}</td>
+            <td>${appointment.booking_time}</td>
+            <td>
+              <button class="cancel-btn" onclick="cancelAppointment('${appointment.id}')">Cancel</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+        
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="color: #8b2626;">Script Error: ${err.message}</td></tr>`;
+      }
     }
 
-    // Cancellation Logic (Deletes the row from database)
+    // Cancellation Logic
     async function cancelAppointment(id) {
       if (confirm('Are you sure you want to cancel this booking?')) {
-        const { error } = await supabase
+        const { error } = await supabaseClient
           .from('appointments')
           .delete()
           .eq('id', id);
@@ -127,12 +143,12 @@
           alert('Could not cancel: ' + error.message);
         } else {
           alert('Appointment cancelled successfully.');
-          loadAppointments(); // Refresh the list
+          loadAppointments(); // Refresh list
         }
       }
     }
 
-    // Run this function immediately when page opens
+    // Run immediately on page open
     loadAppointments();
   </script>
 </body>
